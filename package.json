@@ -25,7 +25,8 @@
     "pre-commit": "npx tsc --noEmit && npm run lint && npm run format",
     "lint": "eslint src --cache --fix --max-warnings=0 --cache-location './node_modules/.cache/.eslintcache'",
     "format": "prettier src --write --cache",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "deploy": "react-scripts build && firebase deploy"
   },
   "eslintConfig": {
     "extends": [
