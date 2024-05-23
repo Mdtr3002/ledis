@@ -12,3 +12,21 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: block;
+  background-color: transparent;
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: #E5E7EE;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #99999d;
+  border-radius: 20px;
+  border: 0;
+}
