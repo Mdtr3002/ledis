@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
 import RedisIcon from '../../assets/svg/redis_icon.svg';
-import handleDelisCommand from '../../services/command';
-import dbService from '../../services/db';
+import handleLedisCommand from '../../services/command.service';
+import dbService from '../../services/db.service';
 
 const Homepage = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
@@ -27,7 +27,7 @@ const Homepage = () => {
       return;
     }
     const command = inputCommand.split(' ').filter((item) => item !== '');
-    const response = await handleDelisCommand(command);
+    const response = await handleLedisCommand(command);
     setCommandList((prev) => [...prev, `>${inputCommand}`, response]);
     setInputCommand('');
   };
