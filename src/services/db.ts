@@ -80,6 +80,50 @@ const getData = (key: string): Promise<Entity | string | null> => {
   });
 };
 
-const dbService = { initDB, addData, getData };
+const getAllKeys = (): Promise<string[] | string | null> => {
+  return new Promise((resolve) => {
+    request = indexedDB.open(DBName);
+
+    request.onsuccess = () => {
+      console.log('request.onsuccess - getAllKeys');
+      db = request.result;
+      const tx = db.transaction(StoreName, 'readonly');
+      const store = tx.objectStore(StoreName);
+      const res = store.getAllKeys();
+      res.onsuccess = (event) => {
+        const keys: string[] = (event.target as IDBRequest).result;
+        resolve(keys);
+      };
+    };
+    request.onerror = () => {
+      const error = request.error?.message;
+      if (error) {
+        resolve(error);
+      } else {
+        resolve('Unknown error');
+      }
+    };
+  });
+};
+
+const deleteKey = (keys: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    request = indexedDB.open(DBName, version);
+
+    request.onsuccess = () => {
+      console.log('request.onsuccess - deleteKeys');
+      db = request.result;
+      const tx = db.transaction(StoreName, 'readwrite');
+      const store = tx.objectStore(StoreName);
+      store.delete(keys);
+      resolve(true);
+    };
+    request.onerror = () => {
+      resolve(false);
+    };
+  });
+};
+
+const dbService = { initDB, addData, getData, getAllKeys, deleteKey };
 
 export default dbService;
