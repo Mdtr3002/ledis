@@ -26,7 +26,7 @@ const Homepage = () => {
       setInputCommand('');
       return;
     }
-    const command = inputCommand.split(' ');
+    const command = inputCommand.split(' ').filter((item) => item !== '');
     const response = await handleDelisCommand(command);
     setCommandList((prev) => [...prev, `>${inputCommand}`, response]);
     setInputCommand('');
