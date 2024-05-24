@@ -3,6 +3,7 @@ import {
   KeyCommand,
   ListCommand,
   SetCommand,
+  SnapshotCommand,
   StringCommand,
 } from '../constants/command';
 import { Entity } from '../types/entity';
@@ -254,7 +255,23 @@ const handleExpireCommand = async (command: string[]) => {
   return 'Expire Command';
 };
 
-const handleDelisCommand = async (command: string[]) => {
+const handleSnapshotCommand = async (command: string[]) => {
+  const commandKeyWord = command[0].toUpperCase();
+  if (commandKeyWord === 'SAVE') {
+    if (command.length !== 1) return 'Error: wrong number of arguments';
+    const data = await dbService.saveSnapshot();
+    if (typeof data === 'string') return 'Error';
+    return 'OK';
+  } else if (commandKeyWord === 'RESTORE') {
+    if (command.length !== 1) return 'Error: wrong number of arguments';
+    const data = await dbService.restoreSnapshot();
+    if (typeof data === 'string' || !data) return 'Error';
+    return 'OK';
+  }
+  return 'Snapshot Command';
+};
+
+const handleDelisCommand = (command: string[]) => {
   const commandKeyWord = command[0].toUpperCase();
   if (StringCommand.includes(commandKeyWord)) {
     return handleStringCommand(command);
@@ -266,6 +283,8 @@ const handleDelisCommand = async (command: string[]) => {
     return handleKeyCommand(command);
   } else if (DataExpireCommand.includes(commandKeyWord)) {
     return handleExpireCommand(command);
+  } else if (SnapshotCommand.includes(commandKeyWord)) {
+    return handleSnapshotCommand(command);
   }
   return 'Unknown Command';
 };

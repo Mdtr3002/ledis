@@ -136,6 +136,75 @@ const deleteKey = (keys: string): Promise<boolean> => {
   });
 };
 
-const dbService = { initDB, addData, getData, getAllKeys, deleteKey };
+const saveSnapshot = (): Promise<boolean | string> => {
+  return new Promise((resolve) => {
+    request = indexedDB.open(DBName, version);
+
+    request.onsuccess = () => {
+      console.log('request.onsuccess - saveSnapshot');
+      db = request.result;
+      const tx = db.transaction(StoreName, 'readwrite');
+      const store = tx.objectStore(StoreName);
+      const res = store.getAll();
+      res.onsuccess = (event) => {
+        const keys: Entity[] = (event.target as IDBRequest).result;
+        localStorage.setItem('indexedDBState', JSON.stringify(keys));
+        resolve(true);
+      };
+    };
+    request.onerror = () => {
+      const error = request.error?.message;
+      if (error) {
+        resolve(error);
+      } else {
+        resolve('Unknown error');
+      }
+    };
+  });
+};
+
+const restoreSnapshot = (): Promise<boolean | string> => {
+  return new Promise((resolve) => {
+    request = indexedDB.open(DBName, version);
+
+    request.onsuccess = () => {
+      console.log('request.onsuccess - restoreSnapshot');
+      db = request.result;
+      const tx = db.transaction(StoreName, 'readwrite');
+      const store = tx.objectStore(StoreName);
+      const clearStorage = store.clear();
+      clearStorage.onsuccess = () => {
+        const keys = localStorage.getItem('indexedDBState');
+        if (keys) {
+          const parsedKeys: Entity[] = JSON.parse(keys);
+          for (const el of parsedKeys) {
+            store.put(el);
+          }
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      };
+    };
+    request.onerror = () => {
+      const error = request.error?.message;
+      if (error) {
+        resolve(error);
+      } else {
+        resolve('Unknown error');
+      }
+    };
+  });
+};
+
+const dbService = {
+  initDB,
+  addData,
+  getData,
+  getAllKeys,
+  deleteKey,
+  saveSnapshot,
+  restoreSnapshot,
+};
 
 export default dbService;
