@@ -1,19 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import RedisIcon from '../../assets/svg/redis_icon.svg';
+import handleDelisCommand from '../../services/command';
+import dbService from '../../services/db';
 
 const Homepage = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
   const [commandList, setCommandList] = useState<string[]>(['>SET key value', 'OK']);
+  const [isDBReady, setIsDBReady] = useState<boolean>(false);
+  console.log(isDBReady);
 
-  const handleCommand = () => {
+  const handleInitDB = async () => {
+    const status = await dbService.initDB();
+    setIsDBReady(status);
+  };
+
+  useEffect(() => {
+    handleInitDB();
+  }, []);
+
+  const handleCommand = async () => {
     if (inputCommand === '') return;
     if (inputCommand.toLowerCase() === 'clear') {
       setCommandList([]);
       setInputCommand('');
       return;
     }
-    setCommandList((prev) => [...prev, `>${inputCommand}`, 'OK']);
+    const command = inputCommand.split(' ');
+    const response = await handleDelisCommand(command);
+    setCommandList((prev) => [...prev, `>${inputCommand}`, response]);
     setInputCommand('');
   };
 
