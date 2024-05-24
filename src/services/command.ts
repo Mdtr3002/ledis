@@ -1,4 +1,10 @@
-import { KeyCommand, ListCommand, SetCommand, StringCommand } from '../constants/command';
+import {
+  DataExpireCommand,
+  KeyCommand,
+  ListCommand,
+  SetCommand,
+  StringCommand,
+} from '../constants/command';
 import { Entity } from '../types/entity';
 
 import dbService from './db';
@@ -34,10 +40,14 @@ const handleListCommand = async (command: string[]) => {
     const data = await dbService.getData(key);
     if (typeof data === 'object' && !Array.isArray(data?.value))
       return 'Error: Operation against a key holding the wrong kind of value';
-    if (data === null || typeof data === 'string') return 'Error';
-    const existingValue = typeof data == 'object' && Array.isArray(data.value) ? data.value : [];
+    if (typeof data === 'string') return 'Error';
+    const existingValue =
+      data && typeof data == 'object' && Array.isArray(data.value) ? data.value : [];
     const value = [...existingValue, ...command.slice(2)];
-    const insertedData = await dbService.addData({ key, value });
+    let insertedData;
+    if (data && data.expireTime) {
+      insertedData = await dbService.addData({ key, value, expireTime: data.expireTime });
+    } else insertedData = await dbService.addData({ key, value });
     if (typeof insertedData === 'string' || insertedData === null) return 'Error';
     return Array.isArray(insertedData?.value || '') && !(insertedData?.value instanceof Set)
       ? insertedData.value.length.toString()
@@ -54,7 +64,9 @@ const handleListCommand = async (command: string[]) => {
       if (data.value.length === 0) return '(nil)';
       const returnValue = data.value[data.value.length - 1];
       const value = data.value.slice(0, -1);
-      await dbService.addData({ key, value: value });
+      if (data.expireTime) {
+        await dbService.addData({ key, value, expireTime: data.expireTime });
+      } else await dbService.addData({ key, value: value });
       return returnValue;
     }
     return 'Error';
@@ -87,9 +99,9 @@ const handleSetCommand = async (command: string[]) => {
     const data = await dbService.getData(key);
     if (typeof data === 'object' && !(data?.value instanceof Set))
       return 'Error: Operation against a key holding the wrong kind of value';
-    if (data === null || typeof data === 'string') return 'Error';
+    if (typeof data === 'string') return 'Error';
     const initializeValue = command.slice(2);
-    if (data === undefined) {
+    if (data === undefined || data === null) {
       const value = new Set(initializeValue);
       const insertedData = await dbService.addData({ key, value });
       if (typeof insertedData === 'string' || insertedData === null) return 'Error';
@@ -100,7 +112,14 @@ const handleSetCommand = async (command: string[]) => {
       initializeValue.forEach((element) => {
         existingValue.add(element);
       });
-      const insertedData = await dbService.addData({ key, value: existingValue });
+      let insertedData;
+      if (data.expireTime) {
+        insertedData = await dbService.addData({
+          key,
+          value: existingValue,
+          expireTime: data.expireTime,
+        });
+      } else insertedData = await dbService.addData({ key, value: existingValue });
       if (typeof insertedData === 'string' || insertedData === null) return 'Error';
       return insertedData?.value instanceof Set
         ? (insertedData.value.size - initialLength).toString()
@@ -123,7 +142,14 @@ const handleSetCommand = async (command: string[]) => {
           deletionCount++;
         }
       });
-      const insertedData = await dbService.addData({ key, value: existingValue });
+      let insertedData;
+      if (data.expireTime) {
+        insertedData = await dbService.addData({
+          key,
+          value: existingValue,
+          expireTime: data.expireTime,
+        });
+      } else insertedData = await dbService.addData({ key, value: existingValue });
       if (typeof insertedData === 'string' || insertedData === null) return 'Error';
       return insertedData?.value instanceof Set ? deletionCount.toString() : 'Error';
     }
@@ -190,6 +216,44 @@ const handleKeyCommand = async (command: string[]) => {
   return 'Key Command';
 };
 
+const handleExpireCommand = async (command: string[]) => {
+  const commandKeyWord = command[0].toUpperCase();
+  if (commandKeyWord === 'EXPIRE') {
+    if (command.length !== 3) return 'Error: wrong number of arguments';
+    const key = command[1];
+    const expireTime = parseInt(command[2]);
+    if (isNaN(expireTime)) return 'Error: value is not an integer or out of range';
+    const data = await dbService.getData(key);
+    if (typeof data === 'object' && data !== null) {
+      if (expireTime < 0) {
+        const data = await dbService.deleteKey(key);
+        if (!data) return 'Error';
+        return '1';
+      }
+      const currentTime = new Date();
+      const expireDate = new Date(currentTime.getTime() + expireTime * 1000);
+      data.expireTime = expireDate;
+      const insertedData = await dbService.addData(data);
+      if (typeof insertedData === 'string' || insertedData === null) return 'Error';
+      return expireTime.toString();
+    }
+    return '0';
+  } else if (commandKeyWord === 'TTL') {
+    if (command.length !== 2) return 'Error: wrong number of arguments';
+    const key = command[1];
+    const data = await dbService.getData(key);
+    if (typeof data === 'object' && data !== null) {
+      if (data.expireTime === undefined || !(data.expireTime instanceof Date)) return '-1';
+      const currentTime = new Date();
+      const expireTime = new Date(data.expireTime);
+      const diff = Math.floor((expireTime.getTime() - currentTime.getTime()) / 1000);
+      return diff.toString();
+    }
+    return '-2';
+  }
+  return 'Expire Command';
+};
+
 const handleDelisCommand = async (command: string[]) => {
   const commandKeyWord = command[0].toUpperCase();
   if (StringCommand.includes(commandKeyWord)) {
@@ -200,6 +264,8 @@ const handleDelisCommand = async (command: string[]) => {
     return handleSetCommand(command);
   } else if (KeyCommand.includes(commandKeyWord)) {
     return handleKeyCommand(command);
+  } else if (DataExpireCommand.includes(commandKeyWord)) {
+    return handleExpireCommand(command);
   }
   return 'Unknown Command';
 };

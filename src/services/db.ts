@@ -54,18 +54,22 @@ const addData = (data: Entity): Promise<Entity | string | null> => {
   });
 };
 
-const getData = (key: string): Promise<Entity | string | null> => {
+const getData = (key: string): Promise<Entity | string | null | undefined> => {
   return new Promise((resolve) => {
     request = indexedDB.open(DBName);
 
     request.onsuccess = () => {
       console.log('request.onsuccess - getAllData');
       db = request.result;
-      const tx = db.transaction(StoreName, 'readonly');
+      const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
       const res = store.get(key);
       res.onsuccess = (event) => {
         const dbData: Entity = (event.target as IDBRequest).result;
+        if (dbData?.expireTime && new Date(dbData.expireTime) < new Date()) {
+          store.delete(key);
+          resolve(null);
+        }
         resolve(dbData);
       };
     };
@@ -87,12 +91,20 @@ const getAllKeys = (): Promise<string[] | string | null> => {
     request.onsuccess = () => {
       console.log('request.onsuccess - getAllKeys');
       db = request.result;
-      const tx = db.transaction(StoreName, 'readonly');
+      const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
-      const res = store.getAllKeys();
+      const res = store.getAll();
       res.onsuccess = (event) => {
-        const keys: string[] = (event.target as IDBRequest).result;
-        resolve(keys);
+        const keys: Entity[] = (event.target as IDBRequest).result;
+        const keyNameList: string[] = [];
+        for (const el of keys) {
+          if (el?.expireTime && new Date(el.expireTime) < new Date()) {
+            store.delete(el.key);
+          } else {
+            keyNameList.push(el.key);
+          }
+        }
+        resolve(keyNameList);
       };
     };
     request.onerror = () => {
