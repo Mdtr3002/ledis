@@ -10,7 +10,7 @@ const handleSaveSnapshotCommand = async (command: string[]) => {
 const handleRestoreSnapshotCommand = async (command: string[]) => {
   if (command.length !== 1) return 'Error: wrong number of arguments';
   const data = await dbService.restoreSnapshot();
-  if (typeof data === 'string' || !data) return 'Error';
+  if (typeof data === 'string') return 'Error';
   return 'OK';
 };
 

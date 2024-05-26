@@ -7,7 +7,7 @@ const handleSetExpireCommand = async (command: string[]) => {
   if (isNaN(expireTime)) return 'Error: value is not an integer or out of range';
   const data = await dbService.getData(key);
   if (typeof data === 'object' && data !== null) {
-    if (expireTime < 0) {
+    if (expireTime <= 0) {
       const data = await dbService.deleteKey(key);
       if (!data) return 'Error';
       return '1';

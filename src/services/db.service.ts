@@ -24,7 +24,6 @@ const initDB = (): Promise<boolean> => {
     request.onsuccess = (event) => {
       db = (event.target as IDBOpenDBRequest).result;
       version = db.version;
-      console.log('Open DB success', version);
       resolve(true);
     };
   });
@@ -35,7 +34,6 @@ const addData = (data: Entity): Promise<Entity | string | null> => {
     request = indexedDB.open(DBName, version);
 
     request.onsuccess = (event) => {
-      console.log('request.onsuccess - addData', data);
       db = (event.target as IDBOpenDBRequest).result;
       const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
@@ -59,7 +57,6 @@ const getData = (key: string): Promise<Entity | string | null | undefined> => {
     request = indexedDB.open(DBName);
 
     request.onsuccess = () => {
-      console.log('request.onsuccess - getAllData');
       db = request.result;
       const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
@@ -89,7 +86,6 @@ const getAllKeys = (): Promise<string[] | string | null> => {
     request = indexedDB.open(DBName);
 
     request.onsuccess = () => {
-      console.log('request.onsuccess - getAllKeys');
       db = request.result;
       const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
@@ -123,7 +119,6 @@ const deleteKey = (keys: string): Promise<boolean> => {
     request = indexedDB.open(DBName, version);
 
     request.onsuccess = () => {
-      console.log('request.onsuccess - deleteKeys');
       db = request.result;
       const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
@@ -141,7 +136,6 @@ const saveSnapshot = (): Promise<boolean | string> => {
     request = indexedDB.open(DBName, version);
 
     request.onsuccess = () => {
-      console.log('request.onsuccess - saveSnapshot');
       db = request.result;
       const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
@@ -168,7 +162,6 @@ const restoreSnapshot = (): Promise<boolean | string> => {
     request = indexedDB.open(DBName, version);
 
     request.onsuccess = () => {
-      console.log('request.onsuccess - restoreSnapshot');
       db = request.result;
       const tx = db.transaction(StoreName, 'readwrite');
       const store = tx.objectStore(StoreName);
