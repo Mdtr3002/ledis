@@ -2,29 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 
 import RedisIcon from '../../assets/svg/redis_icon.svg';
 import { allCommands } from '../../constants/command';
-import handleLedisCommand from '../../services/command.service';
-import dbService from '../../services/db.service';
+import { DBName, StoreName } from '../../constants/store';
+import { useLedis } from '../../hooks/useLedis';
 
 const Homepage = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
   const [commandList, setCommandList] = useState<string[]>([]);
-  const [isDBReady, setIsDBReady] = useState<boolean>(false);
   const consoleRef = useRef<HTMLDivElement>(null);
-
-  const handleInitDB = async () => {
-    const status = await dbService.initDB();
-    setIsDBReady(status);
-  };
-
-  useEffect(() => {
-    handleInitDB();
-  }, []);
 
   useEffect(() => {
     if (consoleRef.current) {
       consoleRef.current?.lastElementChild?.scrollIntoView();
     }
   }, [commandList]);
+
+  const ledisClient = useLedis(DBName, StoreName);
 
   const handleCommand = async () => {
     if (inputCommand === '') return;
@@ -38,7 +30,7 @@ const Homepage = () => {
       return;
     }
     const command = inputCommand.split(' ').filter((item) => item !== '');
-    const response = await handleLedisCommand(command);
+    const response = await ledisClient.call(command);
     setCommandList((prev) => [...prev, `>${inputCommand}`, response]);
     setInputCommand('');
   };
@@ -65,12 +57,12 @@ const Homepage = () => {
           ref={consoleRef}
           className='w-full bg-gray-200 h-[480px] rounded-t-lg p-2 flex flex-col overflow-y-auto custom-scrollbar'
         >
-          {!isDBReady && (
+          {!ledisClient.status && (
             <div className='h-full w-full flex items-center justify-center'>
               <p className='text-[18px]'>Loading...</p>
             </div>
           )}
-          {isDBReady && commandList.map((command, index) => <p key={index}>{command}</p>)}
+          {ledisClient.status && commandList.map((command, index) => <p key={index}>{command}</p>)}
         </div>
         <div className='w-full bg-black rounded-b-lg p-2 text-white flex space-x-1'>
           <p>{'>'}Ledis:</p>
