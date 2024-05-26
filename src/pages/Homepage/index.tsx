@@ -57,12 +57,13 @@ const Homepage = () => {
           ref={consoleRef}
           className='w-full bg-gray-200 h-[480px] rounded-t-lg p-2 flex flex-col overflow-y-auto custom-scrollbar'
         >
-          {!ledisClient.status && (
+          {ledisClient.status !== 'ACTIVE' && (
             <div className='h-full w-full flex items-center justify-center'>
               <p className='text-[18px]'>Loading...</p>
             </div>
           )}
-          {ledisClient.status && commandList.map((command, index) => <p key={index}>{command}</p>)}
+          {ledisClient.status === 'ACTIVE' &&
+            commandList.map((command, index) => <p key={index}>{command}</p>)}
         </div>
         <div className='w-full bg-black rounded-b-lg p-2 text-white flex space-x-1'>
           <p>{'>'}Ledis:</p>
